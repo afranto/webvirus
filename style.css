@@ -1,233 +1,335 @@
-:root {
-  --engage: #E74C3C;
-  --explore: #E67E22;
-  --explain: #F39C12;
-  --elaborate: #27AE60;
-  --evaluate: #2980B9;
-  --refleksi: #8E44AD;
+(() => {
+  'use strict';
 
-  --bg: #F3F6F8;
-  --ink: #1B2A33;
-  --muted: #55656F;
-  --card: #FFFFFF;
-  --deep: #12303B;
-  --accent: var(--deep);      /* diganti JS sesuai fase aktif */
+  // ---- Konfigurasi fase ----
+  const PHASES = [
+    { id: 'beranda',   name: 'Beranda',   short: 'Beranda',   color: '#12303B' },
+    { id: 'engage',    name: 'Engage',    short: 'Engage',    color: '#E74C3C' },
+    { id: 'explore',   name: 'Explore',   short: 'Explore',   color: '#E67E22' },
+    { id: 'explain',   name: 'Explain',   short: 'Explain',   color: '#F39C12' },
+    { id: 'elaborate', name: 'Elaborate', short: 'Elaborate', color: '#27AE60' },
+    { id: 'evaluate',  name: 'Evaluate',  short: 'Evaluate',  color: '#2980B9' },
+    { id: 'refleksi',  name: 'Refleksi',  short: 'Refleksi',  color: '#8E44AD' }
+  ];
+  const TOTAL = PHASES.length - 1;           // 6 fase belajar (tanpa Beranda)
+  const STORAGE_KEY = 'virus5e:progress:v1';
+  const ENGAGE_KEY = 'virus5e:engage:v1';     // jawaban self-check, dibaca lagi di fase Explain
+  const NEXT_LABEL = { 1: 'Lanjut ke Explore', 2: 'Lanjut ke Explain' };
 
-  --header-h: 78px;
-  --nav-h: 64px;
-  --radius: 16px;
-  --shadow: 0 2px 10px rgba(18, 48, 59, .08);
-}
+  // ---- State + LocalStorage ----
+  const defaultState = () => ({ current: 0, completed: [] });
+  let state = loadState();
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-[hidden] { display: none !important; }
+  function loadState() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (raw && Number.isInteger(raw.current) && Array.isArray(raw.completed)) {
+        return {
+          current: Math.min(Math.max(raw.current, 0), TOTAL),
+          completed: [...new Set(raw.completed.filter(n => Number.isInteger(n) && n >= 1 && n <= TOTAL))]
+        };
+      }
+    } catch (e) { /* storage tidak tersedia / rusak */ }
+    return defaultState();
+  }
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* abaikan */ }
+  }
 
-html { scroll-padding-top: calc(var(--header-h) + 8px); }
+  // ---- Elemen ----
+  const $ = id => document.getElementById(id);
+  const sections = [...document.querySelectorAll('.phase')];
+  const nav = $('bottomNav');
+  const pager = $('pager');
 
-body {
-  font-family: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--ink);
-  background: var(--bg);
-  -webkit-text-size-adjust: 100%;
-}
+  // ---- Render navigasi bawah + legenda ----
+  PHASES.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'nav-btn';
+    b.dataset.phase = i;
+    b.style.setProperty('--c', p.color);
+    b.setAttribute('aria-label', p.name);
+    b.innerHTML = `<span class="nav-dot">${i === 0 ? '⌂' : i}</span><span>${p.short}</span>`;
+    b.addEventListener('click', () => goTo(i));
+    nav.appendChild(b);
 
-/* ---------- Header + progress (fixed) ---------- */
-.app-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
-  height: var(--header-h);
-  padding: 8px 16px 6px;
-  padding-top: calc(8px + env(safe-area-inset-top, 0px));
-  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
-  background: var(--card);
-  border-bottom: 1px solid #E1E7EB;
-}
-.header-row {
-  max-width: 800px; margin: 0 auto;
-  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
-}
-.header-title { font-weight: 800; font-size: 1rem; }
-.header-phase { font-weight: 800; font-size: 1rem; color: var(--accent); transition: color .3s; }
+    if (i > 0) {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="dot" style="background:${p.color}"></span>${p.name}`;
+      $('legend').appendChild(li);
+    }
+  });
 
-.progress {
-  max-width: 800px; margin: 6px auto 0;
-  height: 8px; border-radius: 99px; background: #E1E7EB; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; width: 0; border-radius: 99px;
-  background: var(--accent);
-  transition: width .4s ease, background-color .3s;
-}
-.progress-text {
-  max-width: 800px; margin: 2px auto 0;
-  font-size: .75rem; line-height: 1.2; color: var(--muted);
-}
+  // ---- Navigasi antar fase (SPA) ----
+  function goTo(i, fromHash) {
+    i = Math.min(Math.max(i, 0), TOTAL);
+    state.current = i;
+    saveState();
 
-/* ---------- Container ---------- */
-.container {
-  max-width: 800px; margin: 0 auto;
-  padding: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 16px) 16px
-           calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 24px);
-}
+    sections.forEach(s => { s.hidden = Number(s.dataset.phase) !== i; });
+    const p = PHASES[i];
+    document.documentElement.style.setProperty('--accent', p.color);
+    $('phaseLabel').textContent = i === 0 ? 'Beranda' : `Fase ${i}: ${p.name}`;
+    document.querySelector('meta[name="theme-color"]').content = i === 0 ? '#12303B' : p.color;
 
-/* ---------- Card ---------- */
-.card {
-  background: var(--card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 20px;
-  margin-bottom: 16px;
-}
-.card h2 { font-size: 1.25rem; line-height: 1.3; margin-bottom: 8px; }
-.card p + p, .card p + ul { margin-top: 8px; }
-.phase-card { border-top: 6px solid var(--accent); }
-.phase-card h2 { color: var(--accent); }
+    // pager (Sebelumnya / Selesai & Lanjut)
+    pager.hidden = i === 0;
+    if (i > 0) {
+      $('btnNext').textContent = i === TOTAL ? 'Selesai' : (NEXT_LABEL[i] || 'Selesai & Lanjut');
+    }
+    refreshNext();
 
-/* ---------- Hero Beranda ---------- */
-.hero { text-align: center; padding: 8px 0 20px; }
-.lens {
-  width: 168px; height: 168px; margin: 0 auto 16px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #1E5A66, var(--deep) 70%);
-  border: 6px solid #fff;
-  box-shadow: 0 0 0 2px var(--deep), var(--shadow);
-  display: grid; place-items: center;
-}
-.virus { width: 120px; height: 120px; animation: spin 24s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.hero h1 { font-size: 1.65rem; line-height: 1.2; font-weight: 800; color: var(--deep); }
-.hero-sub { color: var(--muted); margin-top: 6px; }
+    updateUI();
+    if (!fromHash && location.hash !== '#' + p.id) history.pushState(null, '', '#' + p.id);
+    window.scrollTo({ top: 0 });
+    const h = sections[i].querySelector('h1, h2');
+    if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+  }
 
-/* ---------- Daftar ---------- */
-.goals { padding-left: 1.25rem; }
-.goals li { margin-bottom: 4px; }
-.legend { list-style: none; margin: 12px 0; display: grid; gap: 6px; }
-.legend li { display: flex; align-items: center; gap: 10px; font-weight: 600; }
-.legend .dot { width: 16px; height: 16px; border-radius: 50%; flex: none; }
+  function completePhase(i) {
+    if (i >= 1 && !state.completed.includes(i)) state.completed.push(i);
+    saveState();
+  }
 
-/* ---------- Tombol ---------- */
-.actions { display: grid; gap: 10px; margin-top: 8px; }
-.btn {
-  min-height: 48px; padding: 10px 20px;
-  font: inherit; font-weight: 800; font-size: 1rem;
-  border-radius: 12px; border: 2px solid transparent;
-  cursor: pointer; transition: transform .1s, opacity .2s;
-}
-.btn:active { transform: scale(.98); }
-.btn-primary { background: var(--engage); color: #fff; }
-.btn-phase { background: var(--accent); color: #fff; }
-.btn-ghost { background: transparent; color: var(--ink); border-color: #C9D3D9; }
-.pager { grid-template-columns: 1fr 1.4fr; }
+  // ---- Update progress bar & nav ----
+  function updateUI() {
+    const done = state.completed.length;
+    const pct = Math.round((done / TOTAL) * 100);
+    $('progressFill').style.width = pct + '%';
+    $('progress').setAttribute('aria-valuenow', pct);
+    $('progressText').textContent = `${done} dari ${TOTAL} fase selesai`;
 
-/* ---------- Bottom nav ---------- */
-.bottom-nav {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  background: var(--card);
-  border-top: 1px solid #E1E7EB;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  display: flex; justify-content: center;
-}
-.nav-btn {
-  flex: 1 1 0; max-width: 114px; min-width: 0;
-  min-height: var(--nav-h);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  background: none; border: 0; border-top: 4px solid transparent;
-  font: inherit; font-size: .6875rem; font-weight: 700; color: var(--muted);
-  cursor: pointer;
-}
-.nav-btn .nav-dot {
-  width: 22px; height: 22px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: #fff; border: 2px solid var(--c); color: var(--c);
-  font-size: .75rem; font-weight: 800; line-height: 1;
-}
-.nav-btn.done .nav-dot { background: var(--c); color: #fff; }
-.nav-btn.active { border-top-color: var(--c); color: var(--ink); }
+    nav.querySelectorAll('.nav-btn').forEach(b => {
+      const i = Number(b.dataset.phase);
+      b.classList.toggle('active', i === state.current);
+      b.classList.toggle('done', state.completed.includes(i));
+      b.setAttribute('aria-current', i === state.current ? 'page' : 'false');
+    });
 
-:focus-visible { outline: 3px solid var(--evaluate); outline-offset: 2px; }
+    const start = $('btnStart');
+    start.textContent = done === 0 ? 'Mulai Belajar' : 'Lanjutkan Belajar';
+    $('btnReset').hidden = done === 0 && state.current === 0;
+  }
 
-@media (min-width: 600px) {
-  .hero h1 { font-size: 2rem; }
-  .actions { grid-template-columns: 1fr 1fr; }
-  .nav-btn { font-size: .8125rem; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .virus { animation: none; }
-  * { transition: none !important; }
-}
+  // ---- Fase 1: Self-Check Miskonsepsi (tanpa skor) ----
+  // Format tersimpan: { answers: { s1: { answer:'benar'|'salah', key:'salah', reason:'' }, ... } }
+  let engage = loadEngage();
+  function loadEngage() {
+    try {
+      const r = JSON.parse(localStorage.getItem(ENGAGE_KEY));
+      if (r && r.answers && typeof r.answers === 'object') return r;
+    } catch (e) { /* abaikan */ }
+    return { answers: {} };
+  }
+  function saveEngage() {
+    try { localStorage.setItem(ENGAGE_KEY, JSON.stringify(engage)); } catch (e) { /* abaikan */ }
+  }
 
-/* ---------- Fase 1: Engage ---------- */
-.phase-card strong { color: var(--ink); }
-.counter { font-weight: 800; color: var(--engage); }
-.stmt { margin-top: 16px; padding-top: 16px; border-top: 1px solid #E1E7EB; }
-.stmt-text { font-weight: 700; margin-bottom: 10px; }
-.choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.choice-btn {
-  min-height: 48px; font: inherit; font-weight: 800;
-  background: #fff; color: var(--engage);
-  border: 2px solid var(--engage); border-radius: 12px; cursor: pointer;
-}
-.choice-btn.selected { background: var(--engage); color: #fff; }
-.stmt-reflect { margin-top: 12px; padding: 12px; border-left: 4px solid var(--engage); background: #FDF1EF; border-radius: 0 12px 12px 0; }
-.stmt-answer { font-weight: 800; margin-bottom: 8px; }
-.stmt-reflect label { display: block; font-size: 1rem; }
-.stmt-reason {
-  display: block; width: 100%; margin-top: 6px; padding: 10px;
-  font: inherit; font-size: 1rem; color: var(--ink);
-  border: 2px solid #C9D3D9; border-radius: 12px; resize: vertical;
-}
-.gate-hint { margin-top: 16px; color: var(--muted); }
-.engage-done { margin-top: 16px; font-weight: 700; }
-.btn:disabled { opacity: .45; cursor: not-allowed; }
+  const stmts = [...document.querySelectorAll('.stmt')];
+  const engageDone = () => stmts.every(el => engage.answers[el.dataset.id]);
 
-/* ---------- Fase 2: Explore ---------- */
-.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; }
-.tab {
-  min-height: 48px; font: inherit; font-weight: 800; border-radius: 12px; cursor: pointer;
-  background: #fff; color: var(--explore); border: 2px solid var(--explore);
-}
-.tab.active { background: var(--explore); color: #fff; }
-.tab:disabled { opacity: .45; cursor: not-allowed; }
-.vir-wrap {
-  position: relative; width: 100%; max-width: 340px; aspect-ratio: 1; margin: 12px auto;
-  border-radius: 50%; background: radial-gradient(circle, #FFF8EE 40%, #FDEBD0);
-}
-.vir { width: 100%; height: 100%; display: block; }
-.vir .part { transition: opacity .25s; }
-.vir[data-active] .part { opacity: .25; }
-.vir[data-active="rna"] .p-rna, .vir[data-active="cap"] .p-cap,
-.vir[data-active="env"] .p-env, .vir[data-active="spike"] .p-spike { opacity: 1; }
-.hotspot {
-  position: absolute; transform: translate(-50%, -50%);
-  width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
-  font: inherit; font-weight: 800; font-size: 1rem;
-  background: #fff; color: var(--explore); border: 3px solid var(--explore);
-  box-shadow: 0 2px 6px rgba(0,0,0,.2);
-}
-.hotspot.visited, .chip.visited { background: var(--explore); color: #fff; }
-.info { margin-top: 12px; padding: 12px 14px; background: #FEF5EA; border-left: 4px solid var(--explore); border-radius: 0 12px 12px 0; }
-.info h3 { font-size: 1.05rem; margin-bottom: 4px; color: #B9600B; }
-.chips { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 12px; }
-.chip {
-  width: 100%; min-height: 48px; padding: 6px 10px; font: inherit; font-weight: 700; font-size: .9375rem;
-  background: #fff; color: var(--ink); border: 2px solid var(--explore); border-radius: 12px; cursor: pointer;
-}
-.chip.visited::before { content: "\2713  "; }
-#panelStruct .counter, #panelRep .counter { color: var(--explore); }
-.stage { width: 100%; display: block; margin: 12px 0 8px; background: #FFF8EE; border-radius: 12px; }
-.stage .el { opacity: 0; transition: opacity .35s; }
-.stage .el.on { opacity: 1; }
-.dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 4px; }
-.dots i { width: 12px; height: 12px; border-radius: 50%; background: #E1E7EB; transition: background .2s; }
-.dots i.done { background: var(--explore); }
-.dots i.now { background: var(--explore); box-shadow: 0 0 0 3px #F8D2AA; }
-.sim-controls { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; margin-top: 12px; }
-.sim-controls .btn { padding: 8px 6px; }
-.checkpoint { margin-top: 20px; padding-top: 16px; border-top: 1px solid #E1E7EB; }
-.checkpoint h3 { color: var(--explore); margin-bottom: 4px; }
-.cp-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-.cp-opt.sel-wrong { border-color: var(--engage); color: var(--engage); }
-.cp-opt.sel-ok { background: var(--elaborate); border-color: var(--elaborate); color: #fff; }
-.cp-feedback { margin-top: 10px; font-weight: 700; }
-.pager:has(#btnNext[hidden]) { grid-template-columns: 1fr; }
+  function fillReasons() {
+    stmts.forEach(el => {
+      const a = engage.answers[el.dataset.id];
+      el.querySelector('.stmt-reason').value = a && a.reason ? a.reason : '';
+    });
+  }
+
+  function updateEngageUI() {
+    let n = 0;
+    stmts.forEach(el => {
+      const a = engage.answers[el.dataset.id];
+      if (a) n++;
+      el.querySelectorAll('.choice-btn').forEach(b => {
+        const on = !!a && a.answer === b.dataset.val;
+        b.classList.toggle('selected', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      el.querySelector('.stmt-reflect').hidden = !a;
+      el.querySelector('.stmt-answer').textContent = a ? 'Pemikiranmu sekarang: ' + (a.answer === 'benar' ? 'Benar' : 'Salah') : '';
+    });
+    $('engageCount').textContent = `${n} dari ${stmts.length} pernyataan dijawab`;
+    const done = n === stmts.length;
+    $('gateHint').hidden = done;
+    $('engageDone').hidden = !done;
+    refreshNext();
+  }
+
+  stmts.forEach(el => {
+    el.querySelectorAll('.choice-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        const prev = engage.answers[el.dataset.id];
+        engage.answers[el.dataset.id] = {
+          answer: b.dataset.val,
+          key: el.dataset.key,
+          reason: prev ? prev.reason : ''
+        };
+        saveEngage();
+        updateEngageUI();
+      });
+    });
+    el.querySelector('.stmt-reason').addEventListener('input', e => {
+      const a = engage.answers[el.dataset.id];
+      if (a) { a.reason = e.target.value; saveEngage(); }
+    });
+  });
+
+  // Tombol "Selesai & Lanjut" terkunci sampai syarat fase terpenuhi
+  function refreshNext() {
+    $('btnNext').disabled = state.current === 1 && !engageDone();
+    $('btnNext').hidden = state.current === 2 && !exploreDone();
+  }
+
+  // ---- Fase 2: Explore (Struktur + Replikasi) ----
+  // Format tersimpan: { visited:['rna',...], simDone:bool, check:'benar'|null }
+  const EX_KEY = 'virus5e:explore:v1';
+  const PARTS = {
+    rna:   { t: 'a. Asam nukleat (RNA)', d: 'Materi genetik virus. Pada SARS-CoV-2 berupa RNA untai tunggal yang memuat "resep" untuk membuat protein virus baru. Virus lain bisa memiliki DNA.' },
+    cap:   { t: 'b. Kapsid', d: 'Lapisan protein yang membungkus dan melindungi asam nukleat. Pada SARS-CoV-2, protein pembungkus RNA disebut nukleokapsid.' },
+    env:   { t: 'c. Envelope', d: 'Selubung berlemak yang berasal dari membran sel inang. Tidak semua virus memilikinya. Lapisan lemak ini mudah rusak oleh sabun, itulah sebabnya cuci tangan efektif.' },
+    spike: { t: 'd. Spike protein', d: 'Protein berbentuk paku di permukaan virus. Spike mengenali dan menempel pada reseptor sel inang (pada SARS-CoV-2: reseptor ACE2), seperti kunci yang cocok dengan gemboknya.' }
+  };
+  const SIM = [
+    { t: '1. Attachment (Pelekatan)', d: 'Spike pada permukaan virus menempel pada reseptor di membran sel inang. Hanya sel dengan reseptor yang cocok yang dapat diinfeksi.' },
+    { t: '2. Entry (Penetrasi)', d: 'Virus masuk ke dalam sel inang, misalnya ditelan dalam gelembung membran (endositosis) atau selubungnya menyatu dengan membran sel.' },
+    { t: '3. Uncoating (Pelepasan selubung)', d: 'Selubung dan kapsid terbuka sehingga RNA virus terlepas ke sitoplasma sel inang.' },
+    { t: '4. Biosintesis / Replikasi', d: 'Virus tidak punya mesin sendiri. RNA virus memakai ribosom dan bahan milik sel inang untuk menyalin dirinya dan membuat protein virus.' },
+    { t: '5. Assembly (Perakitan)', d: 'RNA baru dan protein virus dirakit menjadi virion-virion baru di dalam sel inang.' },
+    { t: '6. Release (Pelepasan)', d: 'Virion baru keluar dari sel inang, misalnya lewat eksositosis atau sel pecah, lalu siap menginfeksi sel-sel lain.' }
+  ];
+  let ex = loadEx();
+  let step = ex.simDone ? 6 : 1;
+  function loadEx() {
+    try {
+      const r = JSON.parse(localStorage.getItem(EX_KEY));
+      if (r && Array.isArray(r.visited)) return { visited: r.visited.filter(p => PARTS[p]), simDone: !!r.simDone, check: r.check === 'benar' ? 'benar' : null };
+    } catch (e) { /* abaikan */ }
+    return { visited: [], simDone: false, check: null };
+  }
+  function saveEx() { try { localStorage.setItem(EX_KEY, JSON.stringify(ex)); } catch (e) { /* abaikan */ } }
+  function exploreDone() { return ex.check === 'benar'; }
+
+  // Tab
+  function showTab(name) {
+    const rep = name === 'rep';
+    $('panelStruct').hidden = rep;
+    $('panelRep').hidden = !rep;
+    [['tabStruct', !rep], ['tabRep', rep]].forEach(([id, on]) => {
+      $(id).classList.toggle('active', on);
+      $(id).setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
+  $('tabStruct').addEventListener('click', () => showTab('struct'));
+  $('tabRep').addEventListener('click', () => showTab('rep'));
+  $('toRep').addEventListener('click', () => { showTab('rep'); $('tabRep').scrollIntoView({ block: 'start' }); });
+
+  // Hotspot
+  function updateStruct() {
+    document.querySelectorAll('[data-part]').forEach(b => b.classList.toggle('visited', ex.visited.includes(b.dataset.part)));
+    const n = ex.visited.length;
+    $('hsCount').textContent = `${n} dari 4 bagian dipelajari`;
+    const all = n === 4;
+    $('toRep').hidden = !all;
+    $('tabRep').disabled = !all;
+  }
+  function openPart(part) {
+    if (!ex.visited.includes(part)) { ex.visited.push(part); saveEx(); }
+    $('virSvg').dataset.active = part;
+    const info = $('hsInfo');
+    info.innerHTML = '<h3></h3><p></p>';
+    info.querySelector('h3').textContent = PARTS[part].t;
+    info.querySelector('p').textContent = PARTS[part].d;
+    updateStruct();
+  }
+  document.querySelectorAll('[data-part]').forEach(b => b.addEventListener('click', () => openPart(b.dataset.part)));
+
+  // Simulasi 6 tahap (berurutan)
+  function renderSim() {
+    $('simStage').querySelectorAll('[data-s]').forEach(e => e.classList.toggle('on', e.dataset.s === String(step)));
+    $('simTitle').textContent = SIM[step - 1].t;
+    $('simDesc').textContent = SIM[step - 1].d;
+    $('simDots').querySelectorAll('i').forEach((d, i) => {
+      d.classList.toggle('done', i < step - 1);
+      d.classList.toggle('now', i === step - 1);
+    });
+    $('simPrev').disabled = step === 1;
+    const next = $('simNext');
+    next.textContent = step < 6 ? 'Selanjutnya' : (ex.simDone ? 'Selesai' : 'Selesai Simulasi');
+    next.disabled = step === 6 && ex.simDone;
+    $('checkpoint').hidden = !ex.simDone;
+  }
+  $('simPrev').addEventListener('click', () => { if (step > 1) { step--; renderSim(); } });
+  $('simReset').addEventListener('click', () => { step = 1; renderSim(); });
+  $('simNext').addEventListener('click', () => {
+    if (step < 6) step++;
+    else if (!ex.simDone) { ex.simDone = true; saveEx(); }
+    renderSim();
+    if (ex.simDone && step === 6) $('checkpoint').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  // Checkpoint
+  function renderCheck() {
+    const fb = $('cpFeedback');
+    document.querySelectorAll('.cp-opt').forEach(o => o.classList.remove('sel-ok', 'sel-wrong'));
+    if (ex.check === 'benar') {
+      document.querySelector('.cp-opt[data-ok="1"]').classList.add('sel-ok');
+      fb.textContent = 'Tepat! Pada uncoating, RNA virus terlepas di dalam sel inang, sehingga tahap biosintesis bisa dimulai. Tombol lanjut sudah terbuka.';
+    } else { fb.textContent = ''; }
+    refreshNext();
+  }
+  document.querySelectorAll('.cp-opt').forEach(o => o.addEventListener('click', () => {
+    if (o.dataset.ok === '1') { ex.check = 'benar'; saveEx(); renderCheck(); }
+    else { o.classList.add('sel-wrong'); $('cpFeedback').textContent = 'Belum tepat. Lihat lagi tahap 3 pada simulasi, lalu coba pilih ulang.'; }
+  }));
+
+  function resetExplore() {
+    ex = { visited: [], simDone: false, check: null };
+    try { localStorage.removeItem(EX_KEY); } catch (e) { /* abaikan */ }
+    step = 1;
+    delete $('virSvg').dataset.active;
+    $('hsInfo').innerHTML = '<p>Belum ada bagian yang dipilih.</p>';
+    showTab('struct');
+    updateStruct(); renderSim(); renderCheck();
+  }
+
+  // ---- Event ----
+  $('btnStart').addEventListener('click', () => {
+    // Pertama kali -> Engage; selanjutnya -> fase pertama yang belum selesai
+    let next = 1;
+    while (next <= TOTAL && state.completed.includes(next)) next++;
+    goTo(next > TOTAL ? 1 : next);
+  });
+
+  $('btnPrev').addEventListener('click', () => goTo(state.current - 1));
+  $('btnNext').addEventListener('click', () => {
+    completePhase(state.current);
+    goTo(state.current === TOTAL ? 0 : state.current + 1);
+  });
+
+  $('btnReset').addEventListener('click', () => {
+    if (confirm('Hapus semua progres belajar di perangkat ini?')) {
+      state = defaultState();
+      saveState();
+      engage = { answers: {} };
+      try { localStorage.removeItem(ENGAGE_KEY); } catch (e) { /* abaikan */ }
+      fillReasons();
+      updateEngageUI();
+      resetExplore();
+      goTo(0);
+    }
+  });
+
+  // Tombol back/forward browser
+  window.addEventListener('popstate', () => {
+    const idx = PHASES.findIndex(p => '#' + p.id === location.hash);
+    goTo(idx === -1 ? 0 : idx, true);
+  });
+
+  // ---- Init: lanjutkan dari fase terakhir ----
+  fillReasons();
+  updateEngageUI();
+  updateStruct(); renderSim(); renderCheck();
+  const hashIdx = PHASES.findIndex(p => '#' + p.id === location.hash);
+  goTo(hashIdx !== -1 ? hashIdx : state.current, true);
+})();
