@@ -280,3 +280,87 @@ body[data-phase="3"] .header-phase { color: #B9770E; }
 @media (min-width: 600px) {
   .cmp-cols, .cycles { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- Fase 4: Elaborate ---------- */
+body[data-phase="4"] .btn-phase { color: var(--ink); }
+body[data-phase="4"] .header-phase { color: #1E8449; }
+#elaborate .phase-card h2 { color: #1E8449; }
+.case-track {
+  display: flex; gap: 12px; margin: 12px -4px 0; padding: 4px;
+  overflow-x: auto; scroll-snap-type: x mandatory; position: relative;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.case-track::-webkit-scrollbar { display: none; }
+.case {
+  flex: 0 0 min(88%, 380px); scroll-snap-align: start;
+  background: #fff; border: 2px solid var(--elaborate); border-top-width: 8px; border-radius: var(--radius);
+  padding: 16px; box-shadow: var(--shadow);
+}
+.case h3 { font-size: 1.15rem; line-height: 1.3; color: #1E8449; }
+.case-focus { font-weight: 800; margin: 4px 0 8px; }
+.case ul { padding-left: 1.2rem; margin: 8px 0; }
+.case li { margin-bottom: 6px; }
+.case-link { padding: 10px 12px; border-radius: 12px; background: #EAF7EF; }
+.case-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin-top: 12px; }
+.case-nav span { font-weight: 800; color: #1E8449; text-align: center; }
+.case-nav .btn { padding: 8px 6px; }
+.hint, .discuss { margin: 12px 0; border: 2px solid var(--elaborate); border-radius: 12px; background: #fff; }
+.hint summary, .discuss summary { min-height: 48px; padding: 10px 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; }
+.hint p, .discuss p { padding: 0 14px 12px; }
+.field { display: block; margin-top: 12px; font-weight: 700; }
+#applyAns {
+  display: block; width: 100%; margin-top: 6px; padding: 10px; font: inherit; font-size: 1rem; color: var(--ink);
+  border: 2px solid #C9D3D9; border-radius: 12px; resize: vertical;
+}
+#applyAns:focus { border-color: var(--elaborate); }
+
+/* ---------- Fase 5: Evaluate ---------- */
+.q-head { margin-top: 12px; }
+#quizCount { font-weight: 800; color: var(--evaluate); }
+.q-bar { height: 8px; margin-top: 6px; border-radius: 99px; background: #E1E7EB; overflow: hidden; }
+#quizBarFill { height: 100%; width: 0; background: var(--evaluate); border-radius: 99px; transition: width .3s; }
+.q-body { margin-top: 14px; }
+.q-body.slide-in { animation: slideIn .3s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+.q-text { font-weight: 800; font-size: 1.0625rem; margin-bottom: 10px; }
+.q-text:focus { outline: none; }
+.q-opts { display: grid; gap: 8px; }
+.qopt {
+  display: flex; gap: 10px; align-items: flex-start; width: 100%; min-height: 48px; padding: 10px 12px;
+  text-align: left; font: inherit; color: var(--ink); background: #fff;
+  border: 2px solid #C9D3D9; border-radius: 12px; cursor: pointer;
+}
+.qletter { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: #E8F1F8; color: var(--evaluate); }
+.qopt:disabled { cursor: default; }
+.qopt:disabled:not(.ok):not(.bad) { opacity: .6; }
+.qopt.ok { border-color: var(--elaborate); background: #EAF7EF; }
+.qopt.bad { border-color: var(--engage); background: #FDF1EF; }
+.q-fb { margin-top: 12px; padding: 12px 14px; border-radius: 12px; border-left: 4px solid; }
+.q-fb:empty { display: none; }
+.q-fb.ok { background: #EAF7EF; border-color: var(--elaborate); }
+.q-fb.bad { background: #FDF1EF; border-color: var(--engage); }
+.q-next { width: 100%; margin-top: 12px; }
+.q-result { margin-top: 16px; }
+.q-result h3 { color: var(--evaluate); }
+.q-score { font-size: 2rem; font-weight: 800; color: var(--evaluate); line-height: 1.2; margin: 4px 0; }
+.q-review { list-style: none; margin: 12px 0; display: grid; gap: 6px; }
+.q-review li { padding: 8px 12px; border-radius: 10px; background: #F3F6F8; }
+.q-review .ok { color: #1E8449; font-weight: 800; }
+.q-review .bad { color: #C0392B; font-weight: 800; }
+.q-best { color: var(--muted); margin-bottom: 12px; }
+.q-result .btn { width: 100%; }
+
+/* ---------- Fase 6: Refleksi ---------- */
+.badge-card { text-align: center; }
+.badge-wrap { max-width: 200px; margin: 4px auto 12px; }
+.badge { width: 100%; display: block; filter: drop-shadow(0 4px 8px rgba(142, 68, 173, .35)); }
+.badge-note { margin-top: 8px; font-weight: 800; color: var(--refleksi); }
+.badge-card .btn { margin-top: 12px; width: 100%; }
+.field { display: block; margin-top: 12px; font-weight: 700; }
+.journal {
+  display: block; width: 100%; margin-top: 6px; padding: 10px; font: inherit; font-size: 1rem; color: var(--ink);
+  border: 2px solid #C9D3D9; border-radius: 12px; resize: vertical;
+}
+.journal:focus { border-color: var(--refleksi); }
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+@media (prefers-reduced-motion: reduce) { .q-body.slide-in { animation: none; } }
