@@ -237,22 +237,109 @@
         </div>
       </article>
     </section>
-    <section class="phase" id="phase-4" data-phase="4" aria-labelledby="t4" hidden>
+    <!-- FASE 4: ELABORATE -->
+    <section class="phase" id="elaborate" data-phase="4" aria-labelledby="t4" hidden>
       <article class="card phase-card">
-        <h2 id="t4">Elaborate</h2>
-        <p>Konten fase Elaborate akan ditambahkan di sini.</p>
+        <h2 id="t4">Elaborate: Virus di Dunia Nyata</h2>
+        <p>Terapkan konsepmu pada tiga penyakit akibat virus. Geser kartu ke samping, atau pakai tombol di bawahnya.</p>
+        <div class="case-track" id="caseTrack" role="region" aria-label="Kartu studi kasus" tabindex="0">
+          <article class="case">
+            <h3>Kasus 1: COVID-19</h3>
+            <p class="case-focus">Fokus: cuci tangan dan envelope virus</p>
+            <p>SARS-CoV-2 adalah virus berselubung (envelope) yang tersusun atas lapisan lemak. Protein spike yang dipakai untuk menempel tertanam pada selubung ini.</p>
+            <ul>
+              <li>Molekul sabun punya ujung yang suka air dan ujung yang suka lemak.</li>
+              <li>Ujung suka lemak menyisip ke envelope dan merusaknya.</li>
+              <li>Spike ikut rusak, sehingga virus tidak dapat menempel pada reseptor ACE2.</li>
+            </ul>
+            <p class="case-link">Kaitan: tahap attachment gagal, sehingga replikasi tidak pernah dimulai. Gosok tangan dengan sabun sekitar 20 detik.</p>
+          </article>
+          <article class="case">
+            <h3>Kasus 2: Demam Berdarah (Dengue)</h3>
+            <p class="case-focus">Fokus: vektor nyamuk dan masuknya virus ke sel</p>
+            <p>Virus dengue ditularkan oleh nyamuk <em>Aedes aegypti</em>. Nyamuk berperan sebagai vektor, yaitu pembawa virus dari satu orang ke orang lain.</p>
+            <ul>
+              <li>Nyamuk menggigit orang yang sakit dan menghisap darah berisi virus.</li>
+              <li>Virus bereplikasi di tubuh nyamuk. Saat nyamuk menggigit orang sehat, virus masuk ke darahnya.</li>
+              <li>Protein selubung virus menempel pada reseptor sel target (antara lain monosit dan makrofag), lalu virus masuk lewat endositosis dan bereplikasi.</li>
+            </ul>
+            <p class="case-link">Kaitan: memutus vektor dengan 3M Plus (menguras, menutup, mengubur) mencegah virus sampai ke tubuh, sehingga attachment dan entry tidak terjadi.</p>
+          </article>
+          <article class="case">
+            <h3>Kasus 3: HIV</h3>
+            <p class="case-focus">Fokus: menyerang sel kekebalan tertentu</p>
+            <p>HIV menyerang limfosit T CD4, sel yang mengatur respons kekebalan tubuh.</p>
+            <ul>
+              <li>Protein selubung HIV menempel pada reseptor CD4 di permukaan sel T.</li>
+              <li>RNA virus diubah menjadi DNA oleh enzim reverse transcriptase, lalu menyatu dengan DNA sel inang (provirus), mirip siklus lisogenik.</li>
+              <li>Virus terus bereplikasi, sel T CD4 menurun, dan tubuh rentan terhadap infeksi lain (tahap AIDS).</li>
+            </ul>
+            <p class="case-link">Kaitan: virus hanya menyerang sel dengan reseptor yang cocok. HIV tidak menular lewat gigitan nyamuk, bersalaman, atau berbagi alat makan.</p>
+          </article>
+        </div>
+        <div class="case-nav">
+          <button type="button" class="btn btn-ghost" id="casePrev">Sebelumnya</button>
+          <span id="caseCount" aria-live="polite">Kasus 1 dari 3</span>
+          <button type="button" class="btn btn-ghost" id="caseNext">Berikutnya</button>
+        </div>
+      </article>
+
+      <article class="card phase-card">
+        <h2>Soal Aplikasi</h2>
+        <p><strong>Mengapa sabun sangat efektif membunuh virus corona jika dikaitkan dengan struktur virus di tahap replikasi?</strong></p>
+        <details class="hint"><summary>Petunjuk</summary><p>Ingat bagian virus yang tersusun dari lemak, dan apa fungsi spike pada tahap pertama replikasi.</p></details>
+        <label class="field" for="applyAns">Tulis jawabanmu dengan kata-katamu sendiri:</label>
+        <textarea id="applyAns" rows="6" maxlength="800" placeholder="Ketik jawabanmu di sini"></textarea>
+        <p class="gate-hint" id="applyHint">Tulis jawabanmu dulu (minimal beberapa kalimat), lalu pembahasan akan terbuka.</p>
+        <details class="discuss" id="applyDiscuss" hidden>
+          <summary>Bandingkan dengan pembahasan</summary>
+          <p>SARS-CoV-2 punya envelope dari lapisan lemak, dan spike tertanam di dalamnya. Molekul sabun menyisip ke lapisan lemak itu dan merusaknya, sehingga spike tidak berfungsi. Tanpa spike yang utuh, virion tidak dapat melakukan attachment pada reseptor sel inang, jadi tahap-tahap replikasi berikutnya tidak pernah terjadi.</p>
+          <p>Tepatnya sabun <em>menonaktifkan</em> virus, karena virus bukan makhluk hidup.</p>
+        </details>
       </article>
     </section>
-    <section class="phase" id="phase-5" data-phase="5" aria-labelledby="t5" hidden>
+    <!-- FASE 5: EVALUATE -->
+    <section class="phase" id="evaluate" data-phase="5" aria-labelledby="t5" hidden>
       <article class="card phase-card">
-        <h2 id="t5">Evaluate</h2>
-        <p>Konten fase Evaluate akan ditambahkan di sini.</p>
+        <h2 id="t5">Evaluate: Kuis Formatif</h2>
+        <p>Lima soal tentang struktur virus dan 6 tahap replikasi. Jawab satu per satu. Jika jawabanmu belum tepat, kamu langsung mendapat penjelasannya.</p>
+        <div id="quizBox">
+          <div class="q-head"><span id="quizCount">Soal 1 dari 5</span><div class="q-bar"><div id="quizBarFill"></div></div></div>
+          <div class="q-body" id="quizBody">
+            <p class="q-text" id="quizQ"></p>
+            <div class="q-opts" id="quizOpts"></div>
+            <div class="q-fb" id="quizFb" role="status"></div>
+            <button type="button" class="btn btn-phase q-next" id="quizNext" hidden>Soal berikutnya</button>
+          </div>
+        </div>
+        <div class="q-result" id="quizResult" hidden>
+          <h3>Skor Akhir</h3>
+          <p class="q-score" id="quizScore"></p>
+          <p id="quizMsg"></p>
+          <ul class="q-review" id="quizReview"></ul>
+          <p id="quizBest" class="q-best"></p>
+          <button type="button" class="btn btn-ghost" id="quizRetry">Ulangi Kuis</button>
+        </div>
       </article>
     </section>
-    <section class="phase" id="phase-6" data-phase="6" aria-labelledby="t6" hidden>
+    <!-- FASE 6: REFLEKSI -->
+    <section class="phase" id="refleksi" data-phase="6" aria-labelledby="t6" hidden>
+      <article class="card phase-card badge-card">
+        <div class="badge-wrap"><svg class="badge" viewBox="0 0 200 232" role="img" aria-label="Lencana digital Penjelajah Virus"><polygon points="55,150 30,226 62,211 80,229 95,165" fill="#6C3483"/><polygon points="145,150 170,226 138,211 120,229 105,165" fill="#6C3483"/><circle cx="100" cy="95" r="86" fill="#F1C40F"/><circle cx="100" cy="95" r="78" fill="#8E44AD"/><circle cx="100" cy="95" r="62" fill="#fff"/><g fill="#F1C40F" font-size="16" text-anchor="middle"><text x="100" y="34">&#9733;</text><text x="52" y="52">&#9733;</text><text x="148" y="52">&#9733;</text></g><g transform="translate(100 97) scale(1.4)"><circle r="26" fill="#FAD7A0" stroke="#E67E22" stroke-width="2"/><circle r="17" fill="#fff" stroke="#D35400" stroke-width="1.6"/><path d="M-10 0q2.5-6 5 0t5 0t5 0t5 0" fill="none" stroke="#C0392B" stroke-width="1.8" stroke-linecap="round"/><g stroke="#1E5A66" stroke-width="2" stroke-linecap="round" fill="#1E5A66"><line x1="26.0" y1="0.0" x2="33.0" y2="0.0"/><circle cx="36.5" cy="0.0" r="2.8" stroke="none"/><line x1="23.4" y1="11.3" x2="29.7" y2="14.3"/><circle cx="32.9" cy="15.8" r="2.8" stroke="none"/><line x1="16.2" y1="20.3" x2="20.6" y2="25.8"/><circle cx="22.8" cy="28.5" r="2.8" stroke="none"/><line x1="5.8" y1="25.3" x2="7.3" y2="32.2"/><circle cx="8.1" cy="35.6" r="2.8" stroke="none"/><line x1="-5.8" y1="25.3" x2="-7.3" y2="32.2"/><circle cx="-8.1" cy="35.6" r="2.8" stroke="none"/><line x1="-16.2" y1="20.3" x2="-20.6" y2="25.8"/><circle cx="-22.8" cy="28.5" r="2.8" stroke="none"/><line x1="-23.4" y1="11.3" x2="-29.7" y2="14.3"/><circle cx="-32.9" cy="15.8" r="2.8" stroke="none"/><line x1="-26.0" y1="0.0" x2="-33.0" y2="0.0"/><circle cx="-36.5" cy="0.0" r="2.8" stroke="none"/><line x1="-23.4" y1="-11.3" x2="-29.7" y2="-14.3"/><circle cx="-32.9" cy="-15.8" r="2.8" stroke="none"/><line x1="-16.2" y1="-20.3" x2="-20.6" y2="-25.8"/><circle cx="-22.8" cy="-28.5" r="2.8" stroke="none"/><line x1="-5.8" y1="-25.3" x2="-7.3" y2="-32.2"/><circle cx="-8.1" cy="-35.6" r="2.8" stroke="none"/><line x1="5.8" y1="-25.3" x2="7.3" y2="-32.2"/><circle cx="8.1" cy="-35.6" r="2.8" stroke="none"/><line x1="16.2" y1="-20.3" x2="20.6" y2="-25.8"/><circle cx="22.8" cy="-28.5" r="2.8" stroke="none"/><line x1="23.4" y1="-11.3" x2="29.7" y2="-14.3"/><circle cx="32.9" cy="-15.8" r="2.8" stroke="none"/></g></g><path d="M14 178h172l-12 17l12 17h-172l12-17z" fill="#27AE60"/><text x="100" y="201" text-anchor="middle" font-size="17" font-weight="800" fill="#fff" font-family="Nunito,system-ui,sans-serif">Penjelajah Virus</text></svg></div>
+        <h2 id="t6">Selamat, Penjelajah Virus!</h2>
+        <p>Kamu sudah menuntaskan Petualangan Mikroskopis. Dari partikel yang tak terlihat, kini kamu tahu bagaimana virus menempel, masuk, memperbanyak diri, dan keluar. Rasa ingin tahumu membuat dunia mikroskopis jadi lebih terang. Terus jelajahi!</p>
+        <p class="badge-note" id="badgeNote" hidden></p>
+        <button type="button" class="btn btn-ghost" id="btnConfetti">Mainkan confetti lagi</button>
+      </article>
       <article class="card phase-card">
-        <h2 id="t6">Refleksi</h2>
-        <p>Konten fase Refleksi akan ditambahkan di sini.</p>
+        <h2>Jurnal Refleksi</h2>
+        <p>Luangkan satu menit untuk menulis. Tidak ada jawaban benar atau salah, ini hanya untukmu.</p>
+        <label class="field" for="jr1">Apa yang baru saya pelajari?</label>
+        <textarea class="journal" id="jr1" rows="3" maxlength="600"></textarea>
+        <label class="field" for="jr2">Miskonsepsi apa yang berhasil saya perbaiki?</label>
+        <textarea class="journal" id="jr2" rows="3" maxlength="600"></textarea>
+        <label class="field" for="jr3">Apa yang ingin saya ketahui lebih lanjut?</label>
+        <textarea class="journal" id="jr3" rows="3" maxlength="600"></textarea>
       </article>
     </section>
 
@@ -265,6 +352,8 @@
 
   <!-- BOTTOM NAVIGATION -->
   <nav class="bottom-nav" id="bottomNav" aria-label="Navigasi fase"></nav>
+
+  <canvas id="confetti" aria-hidden="true" hidden></canvas>
 
   <script src="script.js"></script>
 </body>
