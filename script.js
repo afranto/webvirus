@@ -13,6 +13,8 @@
   ];
   const TOTAL = PHASES.length - 1;           // 6 fase belajar (tanpa Beranda)
   const STORAGE_KEY = 'virus5e:progress:v1';
+  const ENGAGE_KEY = 'virus5e:engage:v1';     // jawaban self-check, dibaca lagi di fase Explain
+  const NEXT_LABEL = { 1: 'Lanjut ke Explore' };
 
   // ---- State + LocalStorage ----
   const defaultState = () => ({ current: 0, completed: [] });
@@ -74,8 +76,9 @@
     // pager (Sebelumnya / Selesai & Lanjut)
     pager.hidden = i === 0;
     if (i > 0) {
-      $('btnNext').textContent = i === TOTAL ? 'Selesai' : 'Selesai & Lanjut';
+      $('btnNext').textContent = i === TOTAL ? 'Selesai' : (NEXT_LABEL[i] || 'Selesai & Lanjut');
     }
+    refreshNext();
 
     updateUI();
     if (!fromHash && location.hash !== '#' + p.id) history.pushState(null, '', '#' + p.id);
@@ -109,6 +112,74 @@
     $('btnReset').hidden = done === 0 && state.current === 0;
   }
 
+  // ---- Fase 1: Self-Check Miskonsepsi (tanpa skor) ----
+  // Format tersimpan: { answers: { s1: { answer:'benar'|'salah', key:'salah', reason:'' }, ... } }
+  let engage = loadEngage();
+  function loadEngage() {
+    try {
+      const r = JSON.parse(localStorage.getItem(ENGAGE_KEY));
+      if (r && r.answers && typeof r.answers === 'object') return r;
+    } catch (e) { /* abaikan */ }
+    return { answers: {} };
+  }
+  function saveEngage() {
+    try { localStorage.setItem(ENGAGE_KEY, JSON.stringify(engage)); } catch (e) { /* abaikan */ }
+  }
+
+  const stmts = [...document.querySelectorAll('.stmt')];
+  const engageDone = () => stmts.every(el => engage.answers[el.dataset.id]);
+
+  function fillReasons() {
+    stmts.forEach(el => {
+      const a = engage.answers[el.dataset.id];
+      el.querySelector('.stmt-reason').value = a && a.reason ? a.reason : '';
+    });
+  }
+
+  function updateEngageUI() {
+    let n = 0;
+    stmts.forEach(el => {
+      const a = engage.answers[el.dataset.id];
+      if (a) n++;
+      el.querySelectorAll('.choice-btn').forEach(b => {
+        const on = !!a && a.answer === b.dataset.val;
+        b.classList.toggle('selected', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      el.querySelector('.stmt-reflect').hidden = !a;
+      el.querySelector('.stmt-answer').textContent = a ? 'Pemikiranmu sekarang: ' + (a.answer === 'benar' ? 'Benar' : 'Salah') : '';
+    });
+    $('engageCount').textContent = `${n} dari ${stmts.length} pernyataan dijawab`;
+    const done = n === stmts.length;
+    $('gateHint').hidden = done;
+    $('engageDone').hidden = !done;
+    refreshNext();
+  }
+
+  stmts.forEach(el => {
+    el.querySelectorAll('.choice-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        const prev = engage.answers[el.dataset.id];
+        engage.answers[el.dataset.id] = {
+          answer: b.dataset.val,
+          key: el.dataset.key,
+          reason: prev ? prev.reason : ''
+        };
+        saveEngage();
+        updateEngageUI();
+      });
+    });
+    el.querySelector('.stmt-reason').addEventListener('input', e => {
+      const a = engage.answers[el.dataset.id];
+      if (a) { a.reason = e.target.value; saveEngage(); }
+    });
+  });
+
+  // Tombol "Selesai & Lanjut" terkunci sampai syarat fase terpenuhi
+  function refreshNext() {
+    $('btnNext').disabled = state.current === 1 && !engageDone();
+  }
+
   // ---- Event ----
   $('btnStart').addEventListener('click', () => {
     // Pertama kali -> Engage; selanjutnya -> fase pertama yang belum selesai
@@ -127,6 +198,10 @@
     if (confirm('Hapus semua progres belajar di perangkat ini?')) {
       state = defaultState();
       saveState();
+      engage = { answers: {} };
+      try { localStorage.removeItem(ENGAGE_KEY); } catch (e) { /* abaikan */ }
+      fillReasons();
+      updateEngageUI();
       goTo(0);
     }
   });
@@ -138,6 +213,8 @@
   });
 
   // ---- Init: lanjutkan dari fase terakhir ----
+  fillReasons();
+  updateEngageUI();
   const hashIdx = PHASES.findIndex(p => '#' + p.id === location.hash);
   goTo(hashIdx !== -1 ? hashIdx : state.current, true);
 })();
