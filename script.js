@@ -14,7 +14,7 @@
   const TOTAL = PHASES.length - 1;           // 6 fase belajar (tanpa Beranda)
   const STORAGE_KEY = 'virus5e:progress:v1';
   const ENGAGE_KEY = 'virus5e:engage:v1';     // jawaban self-check, dibaca lagi di fase Explain
-  const NEXT_LABEL = { 1: 'Lanjut ke Explore', 2: 'Lanjut ke Explain', 3: 'Lanjut ke Elaborate' };
+  const NEXT_LABEL = { 1: 'Lanjut ke Explore', 2: 'Lanjut ke Explain', 3: 'Lanjut ke Elaborate', 4: 'Lanjut ke Ujian (Evaluate)', 5: 'Lanjut ke Refleksi' };
 
   // ---- State + LocalStorage ----
   const defaultState = () => ({ current: 0, completed: [] });
@@ -70,6 +70,9 @@
     sections.forEach(s => { s.hidden = Number(s.dataset.phase) !== i; });
     document.body.dataset.phase = i;
     if (i === 3) renderExplain();
+    if (i === 4) { track.scrollLeft = 0; updateCaseNav(); }
+    if (i !== 6) { cancelAnimationFrame(confettiRaf); $('confetti').hidden = true; }
+    if (i === 6) { renderBadge(); launchConfetti(); }
     const p = PHASES[i];
     document.documentElement.style.setProperty('--accent', p.color);
     $('phaseLabel').textContent = i === 0 ? 'Beranda' : `Fase ${i}: ${p.name}`;
@@ -180,7 +183,7 @@
   // Tombol "Selesai & Lanjut" terkunci sampai syarat fase terpenuhi
   function refreshNext() {
     $('btnNext').disabled = state.current === 1 && !engageDone();
-    $('btnNext').hidden = state.current === 2 && !exploreDone();
+    $('btnNext').hidden = (state.current === 2 && !exploreDone()) || (state.current === 5 && !quizDone());
   }
 
   // ---- Fase 2: Explore (Struktur + Replikasi) ----
@@ -347,6 +350,225 @@
     if (d.open) document.querySelectorAll('.gloss details').forEach(o => { if (o !== d) o.open = false; });
   }));
 
+  // ---- Fase 4: Elaborate (kartu kasus swipe + soal aplikasi) ----
+  // Format tersimpan: { answer: 'teks jawaban refleksi' }
+  const EL_KEY = 'virus5e:elaborate:v1';
+  const track = $('caseTrack');
+  const cases = [...track.children];
+  function caseStep() { return cases.length > 1 ? cases[1].offsetLeft - cases[0].offsetLeft : track.clientWidth; }
+  function caseIndex() {
+    if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 4) return cases.length - 1;
+    return Math.min(cases.length - 1, Math.round(track.scrollLeft / caseStep()));
+  }
+  function updateCaseNav() {
+    const i = caseIndex();
+    $('caseCount').textContent = `Kasus ${i + 1} dari ${cases.length}`;
+    $('casePrev').disabled = i === 0;
+    $('caseNext').disabled = i === cases.length - 1;
+  }
+  track.addEventListener('scroll', () => requestAnimationFrame(updateCaseNav), { passive: true });
+  $('casePrev').addEventListener('click', () => track.scrollTo({ left: (caseIndex() - 1) * caseStep(), behavior: 'smooth' }));
+  $('caseNext').addEventListener('click', () => track.scrollTo({ left: (caseIndex() + 1) * caseStep(), behavior: 'smooth' }));
+
+  function loadEl() {
+    try { const r = JSON.parse(localStorage.getItem(EL_KEY)); if (r && typeof r.answer === 'string') return r.answer; } catch (e) { /* abaikan */ }
+    return '';
+  }
+  function updateApply() {
+    const ok = $('applyAns').value.trim().length >= 20;   // sudah menulis sebelum melihat pembahasan
+    $('applyDiscuss').hidden = !ok;
+    $('applyHint').hidden = ok;
+  }
+  $('applyAns').addEventListener('input', e => {
+    try { localStorage.setItem(EL_KEY, JSON.stringify({ answer: e.target.value })); } catch (err) { /* abaikan */ }
+    updateApply();
+  });
+  function resetElaborate() {
+    try { localStorage.removeItem(EL_KEY); } catch (e) { /* abaikan */ }
+    $('applyAns').value = '';
+    $('applyDiscuss').open = false;
+    updateApply();
+  }
+
+  // ---- Fase 5: Evaluate (kuis formatif, satu soal per layar) ----
+  // Format tersimpan: { answers:[indeks|null x5], done:bool, best:number|null }
+  const QZ_KEY = 'virus5e:evaluate:v1';
+  const QUIZ = [
+    { topic: 'Struktur: kapsid', q: 'Bagian virus yang membungkus langsung asam nukleat dan tersusun dari protein disebut ...',
+      opts: ['Spike protein', 'Kapsid', 'Ribosom', 'Envelope'], ans: 1,
+      ok: 'Kapsid adalah pembungkus protein yang melindungi asam nukleat.',
+      why: ['Spike berada di permukaan virus dan berfungsi menempel pada reseptor sel inang.', null, 'Virus tidak punya ribosom. Ribosom adalah milik sel inang.', 'Envelope adalah selubung lemak di luar kapsid, bukan pembungkus langsung asam nukleat.'] },
+    { topic: 'Urutan 6 tahap replikasi', q: 'Urutan tahap infeksi virus yang benar adalah ...',
+      opts: ['Attachment → Uncoating → Entry → Biosintesis → Assembly → Release',
+             'Entry → Attachment → Uncoating → Biosintesis → Release → Assembly',
+             'Attachment → Entry → Uncoating → Biosintesis → Assembly → Release',
+             'Attachment → Entry → Biosintesis → Uncoating → Release → Assembly'], ans: 2,
+      ok: 'Virus menempel, masuk, melepas selubung, mereplikasi diri, dirakit, lalu keluar.',
+      why: ['Virus harus masuk (entry) dulu sebelum selubungnya dilepas (uncoating).', 'Virus harus menempel (attachment) dulu sebelum masuk, dan virion dirakit dulu sebelum dilepas.', null,
+            'Materi genetik harus terlepas (uncoating) dulu sebelum disalin pada biosintesis, dan virion dirakit dulu sebelum dilepas.'] },
+    { topic: 'Tahap uncoating', q: 'Apa yang terjadi pada tahap uncoating?',
+      opts: ['Virion baru keluar dari sel inang', 'Spike menempel pada reseptor sel inang', 'Materi genetik virus disalin dan protein virus dibuat',
+             'Selubung dan kapsid terbuka sehingga asam nukleat virus terlepas di dalam sel inang'], ans: 3,
+      ok: 'Uncoating melepaskan asam nukleat virus di dalam sel inang sehingga siap disalin.',
+      why: ['Itu tahap release (pelepasan).', 'Itu tahap attachment (pelekatan).', 'Itu tahap biosintesis, yang terjadi setelah uncoating.', null] },
+    { topic: 'Tahap biosintesis', q: 'Pada tahap biosintesis, siapa yang menyediakan ribosom dan energi untuk membuat protein virus?',
+      opts: ['Sel inang', 'Virus itu sendiri', 'Kapsid', 'Envelope'], ans: 0,
+      ok: 'Virus tidak punya mesin sendiri, sehingga ia memakai ribosom dan energi milik sel inang.',
+      why: [null, 'Virus tidak punya ribosom maupun metabolisme sendiri.', 'Kapsid hanya pelindung asam nukleat, tidak membuat protein.', 'Envelope adalah selubung lemak, tidak berfungsi dalam sintesis protein.'] },
+    { topic: 'Spike dan attachment', q: 'Mengapa suatu virus hanya dapat menginfeksi sel tertentu?',
+      opts: ['Karena virus hanya hidup di tempat yang dingin', 'Karena envelope virus menghasilkan energi', 'Karena spike virus hanya cocok dengan reseptor pada sel tertentu',
+             'Karena ribosom virus hanya bekerja pada satu jenis sel'], ans: 2,
+      ok: 'Spike bekerja seperti kunci yang hanya cocok dengan reseptor (gembok) pada sel tertentu.',
+      why: ['Suhu bukan penentu utama sel yang dapat diinfeksi. Yang menentukan adalah kecocokan spike dan reseptor.', 'Envelope adalah selubung lemak dan tidak menghasilkan energi.', null, 'Virus tidak punya ribosom.'] }
+  ];
+  let qz = loadQz();
+  let cur = qz.answers.indexOf(null) === -1 ? QUIZ.length - 1 : qz.answers.indexOf(null);
+  function loadQz() {
+    try {
+      const r = JSON.parse(localStorage.getItem(QZ_KEY));
+      if (r && Array.isArray(r.answers) && r.answers.length === QUIZ.length) {
+        return { answers: r.answers.map(a => (Number.isInteger(a) && a >= 0 && a < 4) ? a : null), done: !!r.done, best: Number.isInteger(r.best) ? r.best : null };
+      }
+    } catch (e) { /* abaikan */ }
+    return { answers: Array(QUIZ.length).fill(null), done: false, best: null };
+  }
+  function saveQz() { try { localStorage.setItem(QZ_KEY, JSON.stringify(qz)); } catch (e) { /* abaikan */ } }
+  function quizDone() { return qz.done; }
+  function quizScore() { return qz.answers.filter((a, i) => a === QUIZ[i].ans).length; }
+
+  function renderQuiz(animate) {
+    $('quizBox').hidden = qz.done;
+    $('quizResult').hidden = !qz.done;
+    if (qz.done) { renderResult(); refreshNext(); return; }
+    const Q = QUIZ[cur];
+    $('quizCount').textContent = `Soal ${cur + 1} dari ${QUIZ.length}`;
+    $('quizQ').textContent = Q.q;
+    const box = $('quizOpts');
+    box.textContent = '';
+    Q.opts.forEach((t, i) => {
+      const b = el('button', 'qopt');
+      b.type = 'button';
+      b.append(el('span', 'qletter', 'ABCD'[i]), el('span', '', t));
+      b.addEventListener('click', () => answerQ(i));
+      box.appendChild(b);
+    });
+    showAnswerState();
+    if (animate) {
+      const body = $('quizBody');
+      body.classList.remove('slide-in'); void body.offsetWidth; body.classList.add('slide-in');
+      $('quizQ').setAttribute('tabindex', '-1'); $('quizQ').focus({ preventScroll: true });
+    }
+    refreshNext();
+  }
+  function showAnswerState() {
+    const Q = QUIZ[cur], a = qz.answers[cur], fb = $('quizFb');
+    const btns = [...$('quizOpts').children];
+    $('quizBarFill').style.width = ((cur + (a !== null ? 1 : 0)) / QUIZ.length * 100) + '%';
+    fb.textContent = ''; fb.className = 'q-fb';
+    $('quizNext').hidden = a === null;
+    if (a === null) return;
+    btns.forEach((b, i) => {
+      b.disabled = true;
+      if (i === Q.ans) b.classList.add('ok');
+      else if (i === a) b.classList.add('bad');
+    });
+    if (a === Q.ans) {
+      fb.classList.add('ok');
+      fb.append(el('strong', '', 'Tepat! '), document.createTextNode(Q.ok));
+    } else {
+      fb.classList.add('bad');
+      fb.append(el('strong', '', 'Belum tepat. '), document.createTextNode(`${Q.why[a]} Jawaban yang benar: ${'ABCD'[Q.ans]}. ${Q.opts[Q.ans]}`));
+    }
+    $('quizNext').textContent = cur === QUIZ.length - 1 ? 'Lihat Skor' : 'Soal berikutnya';
+  }
+  function answerQ(i) {
+    if (qz.answers[cur] !== null) return;
+    qz.answers[cur] = i; saveQz(); showAnswerState();
+    $('quizNext').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  function renderResult() {
+    const n = quizScore(), total = QUIZ.length;
+    $('quizScore').textContent = `${n} dari ${total}`;
+    $('quizMsg').textContent = n === total ? 'Sempurna! Pemahamanmu tentang struktur dan replikasi virus sangat kuat.'
+      : n >= 3 ? 'Bagus! Sebagian besar konsep sudah kamu kuasai. Tinjau soal yang masih keliru pada daftar di bawah.'
+      : 'Kamu sudah memulai, dan itu yang terpenting. Baca lagi fase Explore dan Explain, lalu coba lagi.';
+    const list = $('quizReview');
+    list.textContent = '';
+    QUIZ.forEach((Q, i) => {
+      const right = qz.answers[i] === Q.ans, li = el('li');
+      li.append(el('span', right ? 'ok' : 'bad', right ? '\u2713 Tepat' : '\u2717 Perlu ditinjau'), document.createTextNode(` \u2013 Soal ${i + 1}: ${Q.topic}`));
+      list.appendChild(li);
+    });
+    $('quizBest').textContent = qz.best !== null ? `Skor terbaikmu: ${qz.best} dari ${total}` : '';
+  }
+  $('quizNext').addEventListener('click', () => {
+    if (cur < QUIZ.length - 1) { cur++; renderQuiz(true); }
+    else {
+      qz.done = true; qz.best = Math.max(qz.best === null ? 0 : qz.best, quizScore()); saveQz();
+      renderQuiz();
+      $('quizResult').scrollIntoView({ block: 'start' });
+    }
+  });
+  $('quizRetry').addEventListener('click', () => {
+    qz.answers = Array(QUIZ.length).fill(null); qz.done = false; saveQz(); cur = 0;
+    renderQuiz(true);
+    $('quizBox').scrollIntoView({ block: 'start' });
+  });
+  function resetEvaluate() {
+    qz = { answers: Array(QUIZ.length).fill(null), done: false, best: null }; cur = 0;
+    try { localStorage.removeItem(QZ_KEY); } catch (e) { /* abaikan */ }
+    renderQuiz();
+  }
+
+  // ---- Fase 6: Refleksi (jurnal, lencana, confetti) ----
+  const RF_KEY = 'virus5e:refleksi:v1';
+  const RF_IDS = ['jr1', 'jr2', 'jr3'];
+  function fillJournal() {
+    let r = {};
+    try { r = JSON.parse(localStorage.getItem(RF_KEY)) || {}; } catch (e) { /* abaikan */ }
+    RF_IDS.forEach(k => { $(k).value = typeof r[k] === 'string' ? r[k] : ''; });
+  }
+  RF_IDS.forEach(k => $(k).addEventListener('input', () => {
+    const d = {}; RF_IDS.forEach(x => { d[x] = $(x).value; });
+    try { localStorage.setItem(RF_KEY, JSON.stringify(d)); } catch (e) { /* abaikan */ }
+  }));
+  function resetRefleksi() {
+    try { localStorage.removeItem(RF_KEY); } catch (e) { /* abaikan */ }
+    fillJournal();
+  }
+  function renderBadge() {
+    const note = $('badgeNote');
+    note.hidden = !qz.done;
+    if (qz.done) note.textContent = `Skor kuismu: ${quizScore()} dari ${QUIZ.length}`;
+  }
+  let confettiRaf = 0;
+  function launchConfetti() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const cv = $('confetti'), ctx = cv.getContext('2d');
+    cancelAnimationFrame(confettiRaf);
+    cv.width = window.innerWidth; cv.height = window.innerHeight; cv.hidden = false;
+    const colors = PHASES.slice(1).map(p => p.color).concat('#F1C40F');
+    const ps = Array.from({ length: 140 }, () => ({
+      x: Math.random() * cv.width, y: -Math.random() * cv.height * 0.5 - 10,
+      vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 4, s: 6 + Math.random() * 6,
+      r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.3, c: colors[Math.floor(Math.random() * colors.length)]
+    }));
+    const t0 = performance.now();
+    (function frame(t) {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      let alive = false;
+      ps.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.r += p.vr;
+        if (p.y < cv.height + 20) alive = true;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+        ctx.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * 0.6); ctx.restore();
+      });
+      if (alive && t - t0 < 5000) confettiRaf = requestAnimationFrame(frame);
+      else { ctx.clearRect(0, 0, cv.width, cv.height); cv.hidden = true; }
+    })(t0);
+  }
+  $('btnConfetti').addEventListener('click', launchConfetti);
+
   // ---- Event ----
   $('btnStart').addEventListener('click', () => {
     // Pertama kali -> Engage; selanjutnya -> fase pertama yang belum selesai
@@ -370,6 +592,9 @@
       fillReasons();
       updateEngageUI();
       resetExplore();
+      resetElaborate();
+      resetEvaluate();
+      resetRefleksi();
       goTo(0);
     }
   });
@@ -384,6 +609,8 @@
   fillReasons();
   updateEngageUI();
   updateStruct(); renderSim(); renderCheck();
+  $('applyAns').value = loadEl(); updateApply();
+  renderQuiz(); fillJournal();
   const hashIdx = PHASES.findIndex(p => '#' + p.id === location.hash);
   goTo(hashIdx !== -1 ? hashIdx : state.current, true);
 })();
