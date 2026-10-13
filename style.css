@@ -156,3 +156,27 @@ body {
   .virus { animation: none; }
   * { transition: none !important; }
 }
+
+/* ---------- Fase 1: Engage ---------- */
+.phase-card strong { color: var(--ink); }
+.counter { font-weight: 800; color: var(--engage); }
+.stmt { margin-top: 16px; padding-top: 16px; border-top: 1px solid #E1E7EB; }
+.stmt-text { font-weight: 700; margin-bottom: 10px; }
+.choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice-btn {
+  min-height: 48px; font: inherit; font-weight: 800;
+  background: #fff; color: var(--engage);
+  border: 2px solid var(--engage); border-radius: 12px; cursor: pointer;
+}
+.choice-btn.selected { background: var(--engage); color: #fff; }
+.stmt-reflect { margin-top: 12px; padding: 12px; border-left: 4px solid var(--engage); background: #FDF1EF; border-radius: 0 12px 12px 0; }
+.stmt-answer { font-weight: 800; margin-bottom: 8px; }
+.stmt-reflect label { display: block; font-size: 1rem; }
+.stmt-reason {
+  display: block; width: 100%; margin-top: 6px; padding: 10px;
+  font: inherit; font-size: 1rem; color: var(--ink);
+  border: 2px solid #C9D3D9; border-radius: 12px; resize: vertical;
+}
+.gate-hint { margin-top: 16px; color: var(--muted); }
+.engage-done { margin-top: 16px; font-weight: 700; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
