@@ -76,10 +76,64 @@
     </section>
 
     <!-- FASE 1-6: placeholder, diisi pada tugas berikutnya -->
-    <section class="phase" id="phase-1" data-phase="1" aria-labelledby="t1" hidden>
+    <!-- FASE 1: ENGAGE -->
+    <section class="phase" id="engage" data-phase="1" aria-labelledby="t1" hidden>
       <article class="card phase-card">
-        <h2 id="t1">Engage</h2>
-        <p>Konten fase Engage akan ditambahkan di sini.</p>
+        <h2 id="t1">Engage: Dunia yang Berhenti karena Makhluk Tak Terlihat</h2>
+        <p>Maret 2020, WHO menyatakan COVID-19 sebagai pandemi. Sekolah ditutup, jalanan sepi, dan masker menjadi barang sehari-hari.</p>
+        <p>Penyebabnya adalah partikel bernama SARS-CoV-2, ukurannya sekitar seperseribu lebar rambutmu. Mata telanjang tidak bisa melihatnya, tetapi dalam waktu singkat ia menyebar ke seluruh dunia.</p>
+        <p>Bagaimana sesuatu sekecil itu bisa menulari jutaan orang? Jawabannya ada pada cara virus memperbanyak dirinya, yaitu <strong>replikasi</strong>. Sebelum menyelaminya, ingat dulu apa yang sudah kamu ketahui tentang virus.</p>
+      </article>
+
+      <article class="card phase-card">
+        <h2>Self-Check: Apa Pikiranmu Sekarang?</h2>
+        <p>Pilih <strong>Benar</strong> atau <strong>Salah</strong> menurutmu. Tidak ada nilai dan tidak ada jawaban yang dihakimi. Ini hanya untuk melihat pemikiran awalmu, dan kita akan kembali ke jawabanmu di fase Explain.</p>
+        <p class="counter" id="engageCount" aria-live="polite">0 dari 3 pernyataan dijawab</p>
+
+        <div class="stmt" data-id="s1" data-key="salah">
+          <p class="stmt-text">Virus adalah makhluk hidup bersel tunggal.</p>
+          <div class="choice">
+            <button type="button" class="choice-btn" data-val="benar" aria-pressed="false">Benar</button>
+            <button type="button" class="choice-btn" data-val="salah" aria-pressed="false">Salah</button>
+          </div>
+          <div class="stmt-reflect" hidden>
+            <p class="stmt-answer"></p>
+            <label>Apa yang membuatmu memilih itu? (boleh dikosongkan)
+              <textarea class="stmt-reason" rows="2" maxlength="300"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="stmt" data-id="s2" data-key="salah">
+          <p class="stmt-text">Virus sama dengan bakteri, hanya ukurannya lebih kecil.</p>
+          <div class="choice">
+            <button type="button" class="choice-btn" data-val="benar" aria-pressed="false">Benar</button>
+            <button type="button" class="choice-btn" data-val="salah" aria-pressed="false">Salah</button>
+          </div>
+          <div class="stmt-reflect" hidden>
+            <p class="stmt-answer"></p>
+            <label>Apa yang membuatmu memilih itu? (boleh dikosongkan)
+              <textarea class="stmt-reason" rows="2" maxlength="300"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="stmt" data-id="s3" data-key="salah">
+          <p class="stmt-text">Virus dapat berkembang biak sendiri tanpa menempel pada makhluk hidup lain.</p>
+          <div class="choice">
+            <button type="button" class="choice-btn" data-val="benar" aria-pressed="false">Benar</button>
+            <button type="button" class="choice-btn" data-val="salah" aria-pressed="false">Salah</button>
+          </div>
+          <div class="stmt-reflect" hidden>
+            <p class="stmt-answer"></p>
+            <label>Apa yang membuatmu memilih itu? (boleh dikosongkan)
+              <textarea class="stmt-reason" rows="2" maxlength="300"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <p class="gate-hint" id="gateHint">Jawab ketiga pernyataan untuk membuka tombol lanjut.</p>
+        <p class="engage-done" id="engageDone" hidden>Jawabanmu tersimpan di perangkat ini. Bawa pertanyaan ini ke Explore: <em>bagaimana virus bisa memperbanyak diri?</em></p>
       </article>
     </section>
     <section class="phase" id="phase-2" data-phase="2" aria-labelledby="t2" hidden>
